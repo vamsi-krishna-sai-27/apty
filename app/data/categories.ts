@@ -1,0 +1,37 @@
+  export  const categories=[{
+    id:1,
+    name:"Aptitude",
+    topics:12,
+    questions:120,
+    slug:"aptitude"
+  },
+  {
+    id:2,
+    name:"Reasoning",
+    topics:12,
+    questions:130,
+    slug:"reasoning"
+  },
+  {
+    id:3,
+    name:"Verbal",
+    topics:12,
+    questions:130,
+    slug:"verbal"
+  },
+  {
+    id:4,
+    name:"Government",
+    topics:12,
+    questions:130,
+    slug:"government"
+  },
+  {
+    id:5,
+    name:"Company",
+    topics:12,
+    questions:130,
+    slug:"company"
+  }
+
+]
