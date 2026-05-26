@@ -43,20 +43,20 @@ export default function ResultPage() {
          </div>
 
          <div className="flex gap-4">
-           <Link
-             href="/"
-             className="flex-1 text-center border rounded p-3 hover:bg-zinc-800 transition"
-           >
-             Back To Home
-           </Link>
+            <Link
+                href="/"
+                className="flex-1 text-center border rounded p-3 hover:bg-zinc-800 transition"
+              >
+                Back To Home
+              </Link>
 
-           <button
-             onClick={() => window.history.back()}
-             className="flex-1 border rounded p-3 hover:bg-zinc-800 transition"
-           >
-             Try Again
-           </button>
-         </div>
+              <Link
+                href="/review"
+                className="flex-1 text-center border rounded p-3 hover:bg-zinc-800 transition"
+              >
+                Review Answers
+              </Link>
+            </div>
        </div>
      </main>
   );
