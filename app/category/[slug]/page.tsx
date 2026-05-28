@@ -1,35 +1,101 @@
-import { topics } from "@/app/data/topics";
-import { notFound } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { useParams } from "next/navigation";
+
 import Link from "next/link";
-export default async function CategoryPage({params,}: {params: Promise<{ slug: string }>;}) 
-{
-  const { slug } = await params;
 
-  const filteredTopics = topics.filter(
-    (topic) => topic.categorySlug === slug
-  );
+import { supabase } from "@/app/lib/supabase";
 
- if (filteredTopics.length === 0) {
-  notFound();
-}
-  return (
-    <main className=" min-h-screen flex flex-col items-center py-20">
-              <div className="flex flex-col items-center">
-                <h1 className="font-bold text-4xl">{slug.charAt(0).toUpperCase() + slug.slice(1)}</h1>
-              </div>
-              <div className="flex justify-center flex-wrap gap-10 mt-10 px-10" >
-                
-                    {filteredTopics.map((topic) => (
-                        <Link key={topic.id} href={`/topics/${topic.slug}`}>
-                            <div  className="flex flex-col border p-4 hover:cursor-pointer hover:bg-zinc-800 hover:scale-105 transition-all">
-                                    <div>{topic.name}</div>
-                                    <div>{topic.questions} Questions</div>
-                            </div>
-                        </Link>
-                    ))}   
-                
-              </div>
-        </main>
+import { Card, CardContent } from "@/components/ui/card";
 
+import Navbar from "@/app/components/Navbar";
+export default function CategoryPage() {
+  const params = useParams();
+
+  const slug = params.slug as string;
+
+  const [topics, setTopics] = useState<any[]>([]);
+  const [questionCounts, setQuestionCounts] =
+    useState<Record<string, number>>({});
+
+  useEffect(() => {
+    fetchTopics();
+  }, []);
+
+  const fetchTopics = async () => {
+    const { data } = await supabase
+      .from("topics")
+      .select("*")
+      .eq("category_slug", slug);
+
+    setTopics(data || []);
+
+    if (!data) return;
+
+    const counts: Record<string, number> =
+      {};
+
+    for (const topic of data) {
+      const { count } = await supabase
+        .from("questions")
+        .select("*", {
+          count: "exact",
+          head: true,
+        })
+        .eq("topic_slug", topic.slug);
+
+      counts[topic.slug] = count || 0;
+    }
+
+    setQuestionCounts(counts);
+  };
+
+  return (<>
+  <Navbar/>
+    <main className="min-h-screen max-w-6xl mx-auto py-10 px-4">
+      
+      <div className="mb-10">
+        <h1 className="text-4xl font-bold">
+          {slug.charAt(0).toUpperCase() +
+            slug.slice(1)}
+        </h1>
+      </div>
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        {topics.map((topic) => (
+          <Link
+            key={topic.id}
+            href={`/topics/${topic.slug}`}
+          >
+            <Card className="hover:scale-[1.02] transition-all cursor-pointer">
+
+              <CardContent className="p-5">
+
+                <h2 className="font-semibold text-lg mb-3">
+                  {topic.name}
+                </h2>
+
+                <p className="text-sm text-muted-foreground">
+                  {
+                    questionCounts[
+                      topic.slug
+                    ] || 0
+                  }{" "}
+                  Questions
+                </p>
+
+              </CardContent>
+
+            </Card>
+          </Link>
+        ))}
+
+      </div>
+    </main>
+  
+  </>
   );
 }

@@ -2,6 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/app/lib/supabase";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import QuizHeader from "./quiz/QuizHeader";
+import QuestionCard from "./quiz/QuestionCard";
+import QuizActions from "./quiz/QuizActions";
+import QuestionNavigator from "./quiz/QuestionNavigator";
 
 type Question = {
   id: number;
@@ -28,7 +37,10 @@ export default function Quiz({
   const [visited, setVisited] = useState<Set<number>>(
     new Set([questions[0].id])
   );
-
+  const [
+  bookmarkedQuestions,
+  setBookmarkedQuestions,
+] = useState<number[]>([]);
   // Load saved data
   useEffect(() => {
     const savedAnswers = localStorage.getItem("answers");
@@ -139,151 +151,145 @@ useEffect(() => {
   );
 }, [timeLeft]);
 
-const submitQuiz = () => {
-    let score = 0;
+const bookmarkQuestion = async (
+  questionId: number
+) => {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    questions.forEach((question) => {
-      if (answers[question.id] === question.correctAnswer) {
-        score++;
-      }
-    });
+  console.log("USER:", user);
 
-    localStorage.setItem(
-      "reviewAnswers",
-      JSON.stringify(answers)
-    );
+  if (!user) {
+    console.log("NO USER FOUND");
+    return;
+  }
 
-    localStorage.setItem(
-      "reviewQuestions",
-      JSON.stringify(questions)
-    );
+  const { data, error } = await supabase
+    .from("bookmarks")
+    .insert([
+      {
+        user_id: user.id,
+        question_id: questionId,
+      },
+    ])
+    .select();
 
-    localStorage.removeItem("timeLeft");
+  console.log("DATA:", data);
+  console.log("ERROR:", error);
 
-    router.push(
-      `/result?score=${score}&total=${questions.length}`
-    );
-  };
+  if (error) {
+    toast.error(error.message);
+    return;
+  }
+  setBookmarkedQuestions((prev) => [
+  ...prev,
+  questionId,
+]);
+  toast.success("Question Saved");
+};
 
-  return (
-    <div className="flex gap-8 w-full max-w-7xl">
-      {/* Question Area */}
-      <div className="flex-1 border rounded-lg p-6">
-        
-        {/* Progress Bar */}
-        <div className="mb-6">
-  <div className="flex justify-between items-center mb-3">
-    <span>
-      Question {currentQuestion + 1} of {questions.length}
-    </span>
+const submitQuiz = async () => {
+  let score = 0;
 
-    <span className="font-bold text-red-500">
-      ⏱ {formatTime(timeLeft)}
-    </span>
-  </div>
+  questions.forEach((question) => {
+    if (
+      answers[question.id] ===
+      question.correctAnswer
+    ) {
+      score++;
+    }
+  });
 
-  <div className="flex justify-between mb-2">
-    <span>Progress</span>
-    <span>{Math.round(progress)}%</span>
-  </div>
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  <div className="w-full bg-zinc-700 rounded-full h-3">
-    <div
-      className="bg-green-600 h-3 rounded-full transition-all"
-      style={{
-        width: `${progress}%`,
-      }}
-    />
-  </div>
-</div>
+  if (user) {
+    await supabase
+      .from("quiz_attempts")
+      .insert([
+        {
+          user_id: user.id,
+          score,
+          total: questions.length,
+          topic_slug:
+            questions[0].topicSlug,
+        },
+      ]);
+  }
 
-        <h2 className="text-2xl font-bold mb-4">
-          Question {currentQuestion + 1}
-        </h2>
-
-        <p className="mb-6 text-lg">
-          {current.question}
-        </p>
-
-        <div className="flex flex-col gap-3">
-          {current.options.map((option, index) => (
-            <button
-              key={index}
-              onClick={() => handleOptionSelect(index)}
-              className={`border rounded-lg p-3 text-left transition ${
-                answers[current.id] === index
-                  ? "bg-green-600"
-                  : "hover:bg-zinc-800"
-              }`}
-            >
-              {String.fromCharCode(65 + index)}. {option}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex justify-between mt-8">
-          <button
-            onClick={prevQuestion}
-            disabled={currentQuestion === 0}
-            className="border px-4 py-2 rounded disabled:opacity-50"
-          >
-            Prev
-          </button>
-
-          {currentQuestion === questions.length - 1 ? (
-            <button
-              onClick={submitQuiz}
-              className="bg-green-600 px-4 py-2 rounded"
-            >
-              Submit
-            </button>
-          ) : (
-            <button
-              onClick={nextQuestion}
-              className="border px-4 py-2 rounded"
-            >
-              Next
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Question Navigator */}
-      <div className="w-48 border rounded-lg p-4">
-        <h3 className="font-bold mb-4">
-          Questions
-        </h3>
-
-        <div className="flex flex-wrap gap-2">
-          {questions.map((question, index) => {
-            let color = "bg-zinc-700";
-
-            if (index === currentQuestion) {
-              color = "bg-blue-600";
-            } else if (
-              answers[question.id] !== undefined
-            ) {
-              color = "bg-green-600";
-            } else if (
-              visited.has(question.id)
-            ) {
-              color = "bg-red-600";
-            }
-
-            return (
-              <button
-                key={question.id}
-                onClick={() =>
-                  goToQuestion(index)
-                }
-                className={`w-10 h-10 rounded text-white ${color}`}
-              >
-                {index + 1}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
+  localStorage.setItem(
+    "reviewAnswers",
+    JSON.stringify(answers)
   );
+
+  localStorage.setItem(
+    "reviewQuestions",
+    JSON.stringify(questions)
+  );
+
+  router.push(
+    `/result?score=${score}&total=${questions.length}`
+  );
+};
+
+return (
+  <div className="flex gap-8 w-full max-w-7xl">
+
+    {/* Question Area */}
+    <Card className="flex-1">
+
+      <CardContent className="p-6">
+
+        <QuizHeader
+          currentQuestion={currentQuestion}
+          totalQuestions={questions.length}
+          progress={progress}
+          timeLeft={timeLeft}
+          formatTime={formatTime}
+        />
+
+        <QuestionCard
+          current={current}
+          currentQuestion={currentQuestion}
+          answers={answers}
+          handleOptionSelect={
+            handleOptionSelect
+          }
+          bookmarkQuestion={
+            bookmarkQuestion
+          }
+          bookmarkedQuestions={
+            bookmarkedQuestions
+          }
+        />
+
+        <QuizActions
+          currentQuestion={
+            currentQuestion
+          }
+          totalQuestions={
+            questions.length
+          }
+          prevQuestion={prevQuestion}
+          nextQuestion={nextQuestion}
+          submitQuiz={submitQuiz}
+        />
+
+      </CardContent>
+
+    </Card>
+
+    {/* Navigator */}
+    <QuestionNavigator
+      questions={questions}
+      currentQuestion={currentQuestion}
+      answers={answers}
+      visited={visited}
+      goToQuestion={goToQuestion}
+    />
+
+  </div>
+);
 }

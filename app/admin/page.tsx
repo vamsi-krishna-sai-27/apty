@@ -1,150 +1,568 @@
 "use client";
 
 import { useState, useEffect } from "react";
+
 import { supabase } from "../lib/supabase";
 
+import { useRouter } from "next/navigation";
+
+import { toast } from "sonner";
+
+import AdminStats from "./components/AdminStats";
+
+import AdminActions from "./components/AdminActions";
+
+import CategoryForm from "./components/CategoryForm";
+
+import CategoryList from "./components/CategoryList";
+
+import TopicForm from "./components/TopicForm";
+
+import TopicList from "./components/TopicList";
+
+import QuestionForm from "./components/QuestionForm";
+
+import QuestionTable from "./components/QuestionTable";
 export default function AdminPage() {
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [categories, setCategories] = useState<any[]>([]);
+
+  const router = useRouter();
+
+  const [name, setName] =
+    useState("");
+
+  const [slug, setSlug] =
+    useState("");
+
+  const [categories, setCategories] =
+    useState<any[]>([]);
+
+  const [topicName, setTopicName] =
+    useState("");
+
+  const [topicSlug, setTopicSlug] =
+    useState("");
+
+  const [selectedCategory,
+    setSelectedCategory] =
+    useState("");
+
+  const [topics, setTopics] =
+    useState<any[]>([]);
+
+  const [questionText,
+    setQuestionText] =
+    useState("");
+
+  const [optionA, setOptionA] =
+    useState("");
+
+  const [optionB, setOptionB] =
+    useState("");
+
+  const [optionC, setOptionC] =
+    useState("");
+
+  const [optionD, setOptionD] =
+    useState("");
+
+  const [correctAnswer,
+    setCorrectAnswer] =
+    useState("0");
+
+  const [explanation,
+    setExplanation] =
+    useState("");
+
+  const [selectedTopic,
+    setSelectedTopic] =
+    useState("");
+
+  const [questionsList,
+    setQuestionsList] =
+    useState<any[]>([]);
+
+  const [checkingAuth,
+    setCheckingAuth] =
+    useState(true);
 
   useEffect(() => {
-    fetchCategories();
+    init();
   }, []);
 
-  const fetchCategories = async () => {
-    const { data, error } = await supabase
-      .from("categories")
-      .select("*")
-      .order("id");
+  const init = async () => {
 
-    if (error) {
-      console.log(error);
+    const allowed =
+      await checkUser();
+
+    if (!allowed) {
+      setCheckingAuth(false);
       return;
     }
 
-    setCategories(data || []);
+    await Promise.all([
+      fetchCategories(),
+      fetchTopics(),
+      fetchQuestions(),
+    ]);
+
+    setCheckingAuth(false);
   };
 
-  const handleSave = async () => {
-    const { error } = await supabase
-      .from("categories")
-      .insert([
-        {
-          name,
-          slug,
-        },
-      ]);
+  const checkUser = async () => {
 
-    if (error) {
-      alert(error.message);
-      return;
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      router.replace(
+        "/admin/login"
+      );
+
+      return false;
     }
 
-    alert("Category Added");
+    const user = session.user;
 
-    setName("");
-    setSlug("");
+    const { data: profile } =
+      await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
 
-    fetchCategories();
+    if (
+      profile?.role !== "admin"
+    ) {
+
+      toast.error(
+        "Unauthorized Access"
+      );
+
+      router.replace("/");
+
+      return false;
+    }
+
+    return true;
   };
 
-const deleteCategory = async (id: number) => {
-  console.log("Deleting:", id);
+  const fetchCategories =
+    async () => {
 
-  const { data, error } = await supabase
-    .from("categories")
-    .delete()
-    .eq("id", id)
-    .select();
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("categories")
+        .select("*")
+        .order("id");
 
-  console.log("Data:", data);
-  console.log("Error:", error);
+      if (error) {
+        console.log(error);
+        return;
+      }
 
-  if (error) {
-    alert(error.message);
-    return;
+      setCategories(data || []);
+    };
+
+  const fetchTopics =
+    async () => {
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("topics")
+        .select("*")
+        .order("id");
+
+      if (error) {
+        console.log(error);
+        return;
+      }
+
+      setTopics(data || []);
+    };
+
+  const fetchQuestions =
+    async () => {
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("questions")
+        .select("*")
+        .order("id");
+
+      if (error) {
+        console.log(error);
+        return;
+      }
+
+      setQuestionsList(
+        data || []
+      );
+    };
+
+  const handleSave =
+    async () => {
+
+      const { error } =
+        await supabase
+          .from("categories")
+          .insert([
+            {
+              name,
+              slug,
+            },
+          ]);
+
+      if (error) {
+        toast.error(
+          error.message
+        );
+
+        return;
+      }
+
+      toast.success(
+        "Category Added"
+      );
+
+      setName("");
+      setSlug("");
+
+      fetchCategories();
+    };
+
+  const handleTopicSave =
+    async () => {
+
+      const { error } =
+        await supabase
+          .from("topics")
+          .insert([
+            {
+              name: topicName,
+              slug: topicSlug,
+              category_slug:
+                selectedCategory,
+            },
+          ]);
+
+      if (error) {
+        toast.error(
+          error.message
+        );
+
+        return;
+      }
+
+      toast.success(
+        "Topic Added"
+      );
+
+      setTopicName("");
+      setTopicSlug("");
+      setSelectedCategory("");
+
+      fetchTopics();
+    };
+
+  const handleQuestionSave =
+    async () => {
+
+      if (
+        !questionText.trim() ||
+        !optionA.trim() ||
+        !optionB.trim() ||
+        !optionC.trim() ||
+        !optionD.trim() ||
+        !selectedTopic
+      ) {
+
+        toast.error(
+          "Fill all fields"
+        );
+
+        return;
+      }
+
+      const { error } =
+        await supabase
+          .from("questions")
+          .insert([
+            {
+              question:
+                questionText,
+
+              option_a:
+                optionA,
+
+              option_b:
+                optionB,
+
+              option_c:
+                optionC,
+
+              option_d:
+                optionD,
+
+              correct_answer:
+                Number(
+                  correctAnswer
+                ),
+
+              explanation,
+
+              topic_slug:
+                selectedTopic,
+            },
+          ]);
+
+      if (error) {
+
+        toast.error(
+          error.message
+        );
+
+        return;
+      }
+
+      toast.success(
+        "Question Added"
+      );
+
+      setQuestionText("");
+      setOptionA("");
+      setOptionB("");
+      setOptionC("");
+      setOptionD("");
+      setCorrectAnswer("0");
+      setExplanation("");
+      setSelectedTopic("");
+
+      fetchQuestions();
+    };
+
+  const deleteCategory =
+    async (id: number) => {
+
+      const confirmed =
+        window.confirm(
+          "Delete category?"
+        );
+
+      if (!confirmed) return;
+
+      const { error } =
+        await supabase
+          .from("categories")
+          .delete()
+          .eq("id", id);
+
+      if (error) {
+
+        toast.error(
+          error.message
+        );
+
+        return;
+      }
+
+      fetchCategories();
+    };
+
+  const deleteTopic =
+    async (id: number) => {
+
+      const confirmed =
+        window.confirm(
+          "Delete topic?"
+        );
+
+      if (!confirmed) return;
+
+      const { error } =
+        await supabase
+          .from("topics")
+          .delete()
+          .eq("id", id);
+
+      if (error) {
+
+        toast.error(
+          error.message
+        );
+
+        return;
+      }
+
+      fetchTopics();
+    };
+
+  const deleteQuestion =
+    async (id: number) => {
+
+      const confirmed =
+        window.confirm(
+          "Delete question?"
+        );
+
+      if (!confirmed) return;
+
+      const { error } =
+        await supabase
+          .from("questions")
+          .delete()
+          .eq("id", id);
+
+      if (error) {
+
+        toast.error(
+          error.message
+        );
+
+        return;
+      }
+
+      fetchQuestions();
+    };
+
+  if (checkingAuth) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+
+        <p className="text-lg">
+          Checking Admin Access...
+        </p>
+
+      </main>
+    );
   }
-
-  fetchCategories();
-};
 
   return (
     <main className="min-h-screen max-w-4xl mx-auto p-10">
+
       <h1 className="text-4xl font-bold mb-8">
         Admin Dashboard
       </h1>
 
-      {/* Add Category Form */}
-      <div className="border rounded-lg p-6 mb-10">
-        <h2 className="text-2xl font-semibold mb-6">
-          Add Category
-        </h2>
+      <AdminStats
+        categories={categories}
+        topics={topics}
+        questions={questionsList}
+      />
 
-        <div className="flex flex-col gap-4">
-          <input
-            type="text"
-            placeholder="Category Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="border p-3 rounded"
-          />
+      <AdminActions
+        router={router}
+        supabase={supabase}
+      />
 
-          <input
-            type="text"
-            placeholder="Slug"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            className="border p-3 rounded"
-          />
+      <CategoryForm
+        name={name}
+        setName={setName}
+        slug={slug}
+        setSlug={setSlug}
+        handleSave={handleSave}
+      />
 
-          <button
-            onClick={handleSave}
-            className="bg-green-600 p-3 rounded"
-          >
-            Save Category
-          </button>
-        </div>
-      </div>
+      <TopicForm
+        topicName={topicName}
+        setTopicName={
+          setTopicName
+        }
+        topicSlug={topicSlug}
+        setTopicSlug={
+          setTopicSlug
+        }
+        selectedCategory={
+          selectedCategory
+        }
+        setSelectedCategory={
+          setSelectedCategory
+        }
+        categories={categories}
+        handleTopicSave={
+          handleTopicSave
+        }
+      />
 
-      {/* Categories List */}
-      <div>
-        <h2 className="text-2xl font-semibold mb-4">
-          Categories
-        </h2>
+      <TopicList
+        topics={topics}
+        questionsList={
+          questionsList
+        }
+        deleteTopic={
+          deleteTopic
+        }
+      />
 
-        <div className="flex flex-col gap-3">
-          {categories.map((category) => (
-            <div
-              key={category.id}
-              className="border p-4 rounded-lg flex justify-between items-center"
-            >
-              <div>
-                <div className="font-semibold">
-                  {category.name}
-                </div>
+      <QuestionForm
+        questionText={
+          questionText
+        }
+        setQuestionText={
+          setQuestionText
+        }
+        optionA={optionA}
+        setOptionA={
+          setOptionA
+        }
+        optionB={optionB}
+        setOptionB={
+          setOptionB
+        }
+        optionC={optionC}
+        setOptionC={
+          setOptionC
+        }
+        optionD={optionD}
+        setOptionD={
+          setOptionD
+        }
+        correctAnswer={
+          correctAnswer
+        }
+        setCorrectAnswer={
+          setCorrectAnswer
+        }
+        explanation={
+          explanation
+        }
+        setExplanation={
+          setExplanation
+        }
+        selectedTopic={
+          selectedTopic
+        }
+        setSelectedTopic={
+          setSelectedTopic
+        }
+        topics={topics}
+        handleQuestionSave={
+          handleQuestionSave
+        }
+      />
 
-                <div className="text-sm text-zinc-400">
-                  {category.slug}
-                </div>
-              </div>
+      <QuestionTable
+        questionsList={
+          questionsList
+        }
+        deleteQuestion={
+          deleteQuestion
+        }
+      />
 
-              <button
-                onClick={() => deleteCategory(category.id)}
-                className="bg-red-600 px-4 py-2 rounded"
-              >
-                Delete
-              </button>
-            </div>
-          ))}
+      <CategoryList
+        categories={categories}
+        deleteCategory={
+          deleteCategory
+        }
+      />
 
-          {categories.length === 0 && (
-            <div className="border p-4 rounded-lg">
-              No categories found.
-            </div>
-          )}
-        </div>
-      </div>
     </main>
   );
 }
