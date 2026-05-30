@@ -1,36 +1,119 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AptiTrack
+
+AptiTrack is a web-based aptitude practice platform built with Next.js, Supabase, and ShadCN UI. It helps users improve their problem-solving skills through structured topic-wise quizzes, detailed explanations, bookmarking, and progress tracking.
+
+## Live Demo
+
+https://apty-puce.vercel.app/
+
+## Features
+
+### User Features
+
+* User Authentication (Signup/Login)
+* Topic-wise Practice
+* Category-wise Learning
+* Quiz Timer
+* Bookmark Questions
+* Review Answers
+* Score Analysis
+* Progress Tracking
+* Responsive Design
+* Dark/Light Theme
+
+### Admin Features
+
+* Secure Admin Login
+* Category Management
+* Topic Management
+* Question Management
+* Analytics Dashboard
+* Bulk Question Import via JSON
+
+## Current Content
+
+### Aptitude
+
+* 18 Topics
+* 558 Questions
+
+### Reasoning
+
+* 16 Topics
+* 496 Questions
+
+### Verbal
+
+* 14 Topics
+* 411 Questions
+
+### Total
+
+* 48 Topics
+* 1465 Questions
+
+## Tech Stack
+
+* Next.js 16
+* React 19
+* TypeScript
+* Tailwind CSS
+* ShadCN UI
+* Supabase
+* PostgreSQL
+* Vercel
 
 ## Getting Started
 
-First, run the development server:
+### Install Dependencies
+
+```bash
+npm install
+```
+
+or
+
+```bash
+bun install
+```
+
+### Configure Environment Variables
+
+Create a `.env.local` file:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
+```
+
+### Run Locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+```
+
+or
+
+```bash
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Project Structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+app/
+components/
+data/
+scripts/
+public/
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Author
 
-## Learn More
+Vamsi Krishna Sai
 
-To learn more about Next.js, take a look at the following resources:
+GitHub:
+https://github.com/vamsi-krishna-sai-27
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
